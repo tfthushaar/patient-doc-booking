@@ -8,39 +8,74 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadProfile();
-      } else {
-        setLoading(false);
+    let isMounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error("Session error:", sessionError);
+          setError(sessionError.message);
+          if (isMounted) setLoading(false);
+          return;
+        }
+
+        if (isMounted) {
+          setUser(session?.user ?? null);
+          if (session?.user) {
+            await loadProfile();
+          } else {
+            setLoading(false);
+          }
+        }
+      } catch (err) {
+        console.error("Auth initialization error:", err);
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : "Auth initialization failed");
+          setLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (isMounted) {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await loadProfile();
+        } else {
+          setProfile(null);
+          setLoading(false);
+        }
       }
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadProfile();
-      } else {
-        setProfile(null);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function loadProfile() {
-    const profileData = await getCurrentUserProfile();
-    setProfile(profileData);
-    setLoading(false);
+    try {
+      const profileData = await getCurrentUserProfile();
+      setProfile(profileData);
+      setError(null);
+    } catch (err) {
+      console.error("Profile loading error:", err);
+      setError(err instanceof Error ? err.message : "Failed to load profile");
+    } finally {
+      setLoading(false);
+    }
   }
 
   const isAdmin = profile?.role === "admin";
 
-  return { user, profile, loading, isAdmin };
+  return { user, profile, loading, error, isAdmin };
 }
+
