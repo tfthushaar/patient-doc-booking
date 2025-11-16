@@ -1,202 +1,242 @@
-/*
-# Create Medical Appointment Booking System Schema
+-- =========================================
+-- 1. ENUM TYPES
+-- =========================================
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+    CREATE TYPE user_role AS ENUM ('patient', 'admin');
+  END IF;
 
-## 1. New Tables
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'appointment_status') THEN
+    CREATE TYPE appointment_status AS ENUM ('pending', 'confirmed', 'cancelled', 'completed');
+  END IF;
+END$$;
 
-### profiles
-- `id` (uuid, primary key, references auth.users)
-- `username` (text, unique, not null)
-- `full_name` (text)
-- `phone` (text)
-- `email` (text)
-- `role` (user_role enum: 'patient', 'admin')
-- `selected_specialty` (text) - Patient's medical specialty preference
-- `created_at` (timestamptz, default: now())
+-- =========================================
+-- 2. TABLES
+-- =========================================
 
-### specialties
-- `id` (uuid, primary key)
-- `name` (text, unique, not null) - e.g., "Cardiology", "Dermatology"
-- `description` (text)
-- `created_at` (timestamptz, default: now())
-
-### doctors
-- `id` (uuid, primary key)
-- `name` (text, not null)
-- `specialty_id` (uuid, references specialties)
-- `email` (text)
-- `phone` (text)
-- `availability` (text) - e.g., "Mon-Fri 9AM-5PM"
-- `created_at` (timestamptz, default: now())
-
-### appointments
-- `id` (uuid, primary key)
-- `patient_id` (uuid, references profiles, not null)
-- `doctor_id` (uuid, references doctors, not null)
-- `appointment_date` (date, not null)
-- `appointment_time` (time, not null)
-- `status` (appointment_status enum: 'pending', 'confirmed', 'cancelled', 'completed')
-- `notes` (text)
-- `created_at` (timestamptz, default: now())
-
-## 2. Security
-
-- Enable RLS on all tables
-- Patients can view their own profile and appointments
-- Patients can create appointments
-- Patients can view all doctors
-- Admins have full access to all tables
-- First registered user becomes admin
-- Public read access to specialties and doctors tables for non-authenticated users
-
-## 3. Triggers
-
-- Auto-create profile on user registration
-- First user gets admin role, subsequent users get patient role
-
-## 4. Initial Data
-
-- Insert common medical specialties
-*/
-
--- Create ENUM types
-CREATE TYPE user_role AS ENUM ('patient', 'admin');
-CREATE TYPE appointment_status AS ENUM ('pending', 'confirmed', 'cancelled', 'completed');
-
--- Create profiles table
-CREATE TABLE IF NOT EXISTS profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username text UNIQUE NOT NULL,
   full_name text,
   phone text,
   email text,
-  role user_role DEFAULT 'patient'::user_role NOT NULL,
-  selected_specialty text,
-  created_at timestamptz DEFAULT now()
+  role user_role NOT NULL DEFAULT 'patient',
+  selected_specialty uuid REFERENCES public.specialties(id),
+  created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Create specialties table
-CREATE TABLE IF NOT EXISTS specialties (
+-- specialties
+CREATE TABLE IF NOT EXISTS public.specialties (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text UNIQUE NOT NULL,
   description text,
-  created_at timestamptz DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Create doctors table
-CREATE TABLE IF NOT EXISTS doctors (
+-- doctors
+CREATE TABLE IF NOT EXISTS public.doctors (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
-  specialty_id uuid REFERENCES specialties(id) ON DELETE SET NULL,
+  specialty_id uuid REFERENCES public.specialties(id) ON DELETE SET NULL,
   email text,
   phone text,
   availability text,
-  created_at timestamptz DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Create appointments table
-CREATE TABLE IF NOT EXISTS appointments (
+-- appointments
+CREATE TABLE IF NOT EXISTS public.appointments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  patient_id uuid REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
-  doctor_id uuid REFERENCES doctors(id) ON DELETE CASCADE NOT NULL,
+  patient_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  doctor_id uuid NOT NULL REFERENCES public.doctors(id) ON DELETE CASCADE,
   appointment_date date NOT NULL,
   appointment_time time NOT NULL,
-  status appointment_status DEFAULT 'pending'::appointment_status NOT NULL,
+  status appointment_status NOT NULL DEFAULT 'pending',
   notes text,
-  created_at timestamptz DEFAULT now()
+  created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Enable RLS
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE specialties ENABLE ROW LEVEL SECURITY;
-ALTER TABLE doctors ENABLE ROW LEVEL SECURITY;
-ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
+-- =========================================
+-- 3. RLS
+-- =========================================
 
--- Helper function to check if user is admin
-CREATE OR REPLACE FUNCTION is_admin(uid uuid)
-RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.specialties ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.doctors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
+
+-- Optional but safer: force RLS
+ALTER TABLE public.profiles FORCE ROW LEVEL SECURITY;
+ALTER TABLE public.specialties FORCE ROW LEVEL SECURITY;
+ALTER TABLE public.doctors FORCE ROW LEVEL SECURITY;
+ALTER TABLE public.appointments FORCE ROW LEVEL SECURITY;
+
+-- =========================================
+-- 4. HELPER: is_admin()
+-- =========================================
+
+CREATE OR REPLACE FUNCTION public.is_admin(uid uuid)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
   SELECT EXISTS (
-    SELECT 1 FROM profiles p
-    WHERE p.id = uid AND p.role = 'admin'::user_role
+    SELECT 1
+    FROM public.profiles p
+    WHERE p.id = uid
+      AND p.role = 'admin'
   );
 $$;
 
--- Profiles policies
-CREATE POLICY "Users can view own profile" ON profiles
-  FOR SELECT USING (auth.uid() = id OR is_admin(auth.uid()));
+-- =========================================
+-- 5. POLICIES
+-- =========================================
 
-CREATE POLICY "Users can update own profile" ON profiles
-  FOR UPDATE USING (auth.uid() = id) WITH CHECK (role = (SELECT role FROM profiles WHERE id = auth.uid()));
+-- PROFILES
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Admins have full access to profiles" ON public.profiles;
 
-CREATE POLICY "Admins have full access to profiles" ON profiles
-  FOR ALL TO authenticated USING (is_admin(auth.uid()));
+CREATE POLICY "Users can view own profile"
+ON public.profiles
+FOR SELECT
+USING (auth.uid() = id OR public.is_admin(auth.uid()));
 
--- Specialties policies (public read access)
-CREATE POLICY "Anyone can view specialties" ON specialties
-  FOR SELECT USING (true);
+CREATE POLICY "Users can update own profile"
+ON public.profiles
+FOR UPDATE
+USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);
 
-CREATE POLICY "Admins can manage specialties" ON specialties
-  FOR ALL TO authenticated USING (is_admin(auth.uid()));
+CREATE POLICY "Admins have full access to profiles"
+ON public.profiles
+FOR ALL
+TO authenticated
+USING (public.is_admin(auth.uid()))
+WITH CHECK (public.is_admin(auth.uid()));
 
--- Doctors policies (public read access)
-CREATE POLICY "Anyone can view doctors" ON doctors
-  FOR SELECT USING (true);
+-- SPECIALTIES (public read)
+DROP POLICY IF EXISTS "Anyone can view specialties" ON public.specialties;
+DROP POLICY IF EXISTS "Admins can manage specialties" ON public.specialties;
 
-CREATE POLICY "Admins can manage doctors" ON doctors
-  FOR ALL TO authenticated USING (is_admin(auth.uid()));
+CREATE POLICY "Anyone can view specialties"
+ON public.specialties
+FOR SELECT
+TO public
+USING (true);
 
--- Appointments policies
-CREATE POLICY "Users can view own appointments" ON appointments
-  FOR SELECT USING (auth.uid() = patient_id OR is_admin(auth.uid()));
+CREATE POLICY "Admins can manage specialties"
+ON public.specialties
+FOR ALL
+TO authenticated
+USING (public.is_admin(auth.uid()))
+WITH CHECK (public.is_admin(auth.uid()));
 
-CREATE POLICY "Users can create appointments" ON appointments
-  FOR INSERT TO authenticated WITH CHECK (auth.uid() = patient_id);
+-- DOCTORS (public read)
+DROP POLICY IF EXISTS "Anyone can view doctors" ON public.doctors;
+DROP POLICY IF EXISTS "Admins can manage doctors" ON public.doctors;
 
-CREATE POLICY "Users can update own appointments" ON appointments
-  FOR UPDATE USING (auth.uid() = patient_id OR is_admin(auth.uid()));
+CREATE POLICY "Anyone can view doctors"
+ON public.doctors
+FOR SELECT
+TO public
+USING (true);
 
-CREATE POLICY "Admins can manage all appointments" ON appointments
-  FOR ALL TO authenticated USING (is_admin(auth.uid()));
+CREATE POLICY "Admins can manage doctors"
+ON public.doctors
+FOR ALL
+TO authenticated
+USING (public.is_admin(auth.uid()))
+WITH CHECK (public.is_admin(auth.uid()));
 
--- Trigger to auto-create profile on user registration
-CREATE OR REPLACE FUNCTION handle_new_user()
+-- APPOINTMENTS
+DROP POLICY IF EXISTS "Users can view own appointments" ON public.appointments;
+DROP POLICY IF EXISTS "Users can create appointments" ON public.appointments;
+DROP POLICY IF EXISTS "Users can update own appointments" ON public.appointments;
+DROP POLICY IF EXISTS "Admins can manage all appointments" ON public.appointments;
+
+CREATE POLICY "Users can view own appointments"
+ON public.appointments
+FOR SELECT
+TO authenticated
+USING (patient_id = auth.uid() OR public.is_admin(auth.uid()));
+
+CREATE POLICY "Users can create appointments"
+ON public.appointments
+FOR INSERT
+TO authenticated
+WITH CHECK (patient_id = auth.uid());
+
+CREATE POLICY "Users can update own appointments"
+ON public.appointments
+FOR UPDATE
+TO authenticated
+USING (patient_id = auth.uid() OR public.is_admin(auth.uid()))
+WITH CHECK (patient_id = auth.uid() OR public.is_admin(auth.uid()));
+
+CREATE POLICY "Admins can manage all appointments"
+ON public.appointments
+FOR ALL
+TO authenticated
+USING (public.is_admin(auth.uid()))
+WITH CHECK (public.is_admin(auth.uid()));
+
+-- =========================================
+-- 6. TRIGGER: AUTO-CREATE PROFILE, FIRST USER = ADMIN
+-- =========================================
+
+-- We hook into auth.users AFTER INSERT (simpler & works fine for Supabase)
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql
-SECURITY DEFINER SET search_path = public
+SECURITY DEFINER
+SET search_path = public, auth
 AS $$
 DECLARE
   user_count int;
-  extracted_username text;
+  username text;
+  is_first boolean;
 BEGIN
-  -- Only insert after user is confirmed
-  IF OLD IS DISTINCT FROM NULL AND OLD.confirmed_at IS NULL AND NEW.confirmed_at IS NOT NULL THEN
-    -- Count existing users
-    SELECT COUNT(*) INTO user_count FROM profiles;
-    
-    -- Extract username from email (remove @miaoda.com)
-    extracted_username := REPLACE(NEW.email, '@miaoda.com', '');
-    
-    -- Insert profile with first user as admin
-    INSERT INTO profiles (id, username, email, phone, role)
-    VALUES (
-      NEW.id,
-      extracted_username,
-      NEW.email,
-      NEW.phone,
-      CASE WHEN user_count = 0 THEN 'admin'::user_role ELSE 'patient'::user_role END
-    );
+  -- Count existing profiles
+  SELECT COUNT(*) INTO user_count FROM public.profiles;
+  is_first := (user_count = 0);
+
+  -- Extract username from email before "@"
+  IF NEW.email IS NOT NULL THEN
+    username := split_part(NEW.email, '@', 1);
+  ELSE
+    username := gen_random_uuid()::text;
   END IF;
+
+  INSERT INTO public.profiles (id, username, email, role)
+  VALUES (
+    NEW.id,
+    username,
+    NEW.email,
+    CASE WHEN is_first THEN 'admin'::user_role ELSE 'patient'::user_role END
+  )
+  ON CONFLICT (id) DO NOTHING;
+
   RETURN NEW;
 END;
 $$;
 
-DROP TRIGGER IF EXISTS on_auth_user_confirmed ON auth.users;
-CREATE TRIGGER on_auth_user_confirmed
-  AFTER UPDATE ON auth.users
-  FOR EACH ROW
-  EXECUTE FUNCTION handle_new_user();
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
--- Insert initial specialties
-INSERT INTO specialties (name, description) VALUES
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_new_user();
+
+-- =========================================
+-- 7. INITIAL DATA: SPECIALTIES
+-- =========================================
+
+INSERT INTO public.specialties (name, description) VALUES
   ('Cardiology', 'Heart and cardiovascular system specialists'),
   ('Dermatology', 'Skin, hair, and nail care specialists'),
   ('Orthopedics', 'Bone, joint, and muscle specialists'),

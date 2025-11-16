@@ -8,7 +8,7 @@ export interface Profile {
   phone: string | null;
   email: string | null;
   role: UserRole;
-  selected_specialty: string | null;
+  selected_specialty: string | null; // UUID referencing specialties.id
   created_at: string;
 }
 
