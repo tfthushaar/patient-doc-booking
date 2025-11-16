@@ -1,6 +1,7 @@
+
 # Patient Doctor Booking System - Local Development Setup
 
-A modern medical appointment booking system built with React, TypeScript, and Supabase.
+This setup guide was created by Thush. Follow these steps to get your local development environment running for the medical appointment booking system.
 
 ## Prerequisites
 

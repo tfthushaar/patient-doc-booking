@@ -1,4 +1,7 @@
-# Medical Appointment Booking System - System Overview
+
+# Patient Doctor Booking System - System Overview
+
+This system was designed and built by Thush to provide a robust, secure, and user-friendly platform for booking medical appointments. It supports both patient and admin workflows, with a focus on reliability and ease of use.
 
 ## System Architecture
 

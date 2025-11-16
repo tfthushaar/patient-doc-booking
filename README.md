@@ -1,96 +1,107 @@
-# Welcome to Your Miaoda Project
-Miaoda Application Link URL
-    URL:https://medo.dev/projects/app-7llbr06vytc1
 
-# Welcome to Your Miaoda Project
+# Patient Doctor Booking System
 
-## Project Info
+This is a modern medical appointment booking system built and maintained by Thush. It enables patients to book appointments with doctors, and provides administrators with tools to manage users, doctors, and appointments efficiently.
 
-## Project Directory
+## Features
 
-```
-├── README.md # Documentation
-├── components.json # Component library configuration
-├── eslint.config.js # ESLint configuration
-├── index.html # Entry file
-├── package.json # Package management
-├── postcss.config.js # PostCSS configuration
-├── public # Static resources directory
-│   ├── favicon.png # Icon
-│   └── images # Image resources
-├── src # Source code directory
-│   ├── App.tsx # Entry file
-│   ├── components # Components directory
-│   ├── context # Context directory
-│   ├── db # Database configuration directory
-│   ├── hooks # Common hooks directory
-│   ├── index.css # Global styles
-│   ├── layout # Layout directory
-│   ├── lib # Utility library directory
-│   ├── main.tsx # Entry file
-│   ├── routes.tsx # Routing configuration
-│   ├── pages # Pages directory
-│   ├── services # Database interaction directory
-│   ├── types # Type definitions directory
-├── tsconfig.app.json # TypeScript frontend configuration file
-├── tsconfig.json # TypeScript configuration file
-├── tsconfig.node.json # TypeScript Node.js configuration file
-└── vite.config.ts # Vite configuration file
-```
+- Patient registration and login
+- Browse and filter doctors by specialty
+- Book, view, and manage appointments
+- User profile management
+- Admin dashboard for system statistics
+- Manage doctors, users, and appointments
+- CSV import for bulk doctor addition
+- Secure authentication and role-based access
 
-## Tech Stack
+## Technology Stack
 
-Vite, TypeScript, React, Supabase
+- **Frontend:** React, TypeScript, Vite
+- **UI:** Tailwind CSS, shadcn/ui
+- **Backend:** Supabase (PostgreSQL, Auth)
+- **Routing:** React Router
 
-## Development Guidelines
+## Getting Started
 
-### How to edit code locally?
+### Prerequisites
 
-You can choose [VSCode](https://code.visualstudio.com/Download) or any IDE you prefer. The only requirement is to have Node.js and npm installed.
+- Node.js >= 20
+- npm >= 10 or pnpm >= 8
+- Git
 
-### Environment Requirements
+### Installation
 
-```
-# Node.js ≥ 20
-# npm ≥ 10
-Example:
-# node -v   # v20.18.3
-# npm -v    # 10.8.2
-```
+1. Clone the repository:
+    ```bash
+    git clone https://github.com/tfthushaar/patient-doc-booking.git
+    cd patient-doc-booking
+    ```
+2. Install dependencies:
+    ```bash
+    npm install
+    # or
+    pnpm install
+    ```
+3. Configure environment variables:
+    - Copy `.env.example` to `.env` and fill in your Supabase credentials.
+4. Run database migrations in Supabase SQL editor using `supabase/migrations/01_create_medical_appointment_schema.sql`.
+5. Start the development server:
+    ```bash
+    npm run dev
+    # or
+    pnpm dev
+    ```
 
-### Installing Node.js on Windows
+## Project Structure
 
 ```
-# Step 1: Visit the Node.js official website: https://nodejs.org/, click download. The website will automatically suggest a suitable version (32-bit or 64-bit) for your system.
-# Step 2: Run the installer: Double-click the downloaded installer to run it.
-# Step 3: Complete the installation: Follow the installation wizard to complete the process.
-# Step 4: Verify installation: Open Command Prompt (cmd) or your IDE terminal, and type `node -v` and `npm -v` to check if Node.js and npm are installed correctly.
+├── src/
+│   ├── components/
+│   ├── db/
+│   ├── hooks/
+│   ├── lib/
+│   ├── pages/
+│   ├── types/
+│   └── App.tsx
+├── public/
+├── supabase/
+│   └── migrations/
+├── package.json
+├── README.md
+└── ...
 ```
 
-### Installing Node.js on macOS
+## Development Commands
 
-```
-# Step 1: Using Homebrew (Recommended method): Open Terminal. Type the command `brew install node` and press Enter. If Homebrew is not installed, you need to install it first by running the following command in Terminal:
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-Alternatively, use the official installer: Visit the Node.js official website. Download the macOS .pkg installer. Open the downloaded .pkg file and follow the prompts to complete the installation.
-# Step 2: Verify installation: Open Command Prompt (cmd) or your IDE terminal, and type `node -v` and `npm -v` to check if Node.js and npm are installed correctly.
-```
+```bash
+# Install dependencies
+npm install
 
-### After installation, follow these steps:
+# Start development server
+npm run dev
 
-```
-# Step 1: Download the code package
-# Step 2: Extract the code package
-# Step 3: Open the code package with your IDE and navigate into the code directory
-# Step 4: In the IDE terminal, run the command to install dependencies: npm i
-# Step 5: In the IDE terminal, run the command to start the development server: npm run dev -- --host 127.0.0.1
-# Step 6: if step 5 failed, try this command to start the development server: npx vite --host 127.0.0.1
+# Build for production
+npm run build
+
+# Lint code
+npm run lint
 ```
 
-### How to develop backend services?
+## Environment Variables
 
-Configure environment variables and install relevant dependencies.If you need to use a database, please use the official version of Supabase.
+Create a `.env` file in the root directory:
 
-## Learn More
+```
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_LOGIN_TYPE=gmail
+VITE_APP_ID=patient-doc-booking
+```
 
-You can also check the help documentation: Download and Building the app（ [https://intl.cloud.baidu.com/en/doc/MIAODA/s/download-and-building-the-app-en](https://intl.cloud.baidu.com/en/doc/MIAODA/s/download-and-building-the-app-en)）to learn more detailed content.
+## License
+
+This project is proprietary and developed by Thush for medical appointment management.
+
+---
+
+For more details, see `SYSTEM_OVERVIEW.md` and `USER_GUIDE.md`.

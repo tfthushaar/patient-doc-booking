@@ -1,4 +1,7 @@
-# Medical Appointment Booking System - User Guide
+
+# Patient Doctor Booking System - User Guide
+
+This guide was written by Thush to help users and administrators get the most out of the medical appointment booking system. If you have questions or need support, please contact Thush directly.
 
 ## Overview
 
