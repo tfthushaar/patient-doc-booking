@@ -33,7 +33,8 @@ export default {
                 foreground: 'hsl(var(--foreground))',
                 primary: {
                     DEFAULT: 'hsl(var(--primary))',
-                    foreground: 'hsl(var(--primary-foreground))'
+                    foreground: 'hsl(var(--primary-foreground))',
+                    light: 'hsl(var(--primary-light))'
                 },
                 secondary: {
                     DEFAULT: 'hsl(var(--secondary))',
@@ -59,13 +60,18 @@ export default {
                     DEFAULT: 'hsl(var(--card))',
                     foreground: 'hsl(var(--card-foreground))'
                 },
-                education: {
-                    blue: 'hsl(var(--education-blue))',
-                    green: 'hsl(var(--education-green))'
+                success: {
+                    DEFAULT: 'hsl(var(--success))',
+                    foreground: 'hsl(var(--success-foreground))'
                 },
-                success: 'hsl(var(--success))',
-                warning: 'hsl(var(--warning))',
-                info: 'hsl(var(--info))',
+                warning: {
+                    DEFAULT: 'hsl(var(--warning))',
+                    foreground: 'hsl(var(--warning-foreground))'
+                },
+                info: {
+                    DEFAULT: 'hsl(var(--info))',
+                    foreground: 'hsl(var(--info-foreground))'
+                },
                 sidebar: {
                     DEFAULT: 'hsl(var(--sidebar-background))',
                     foreground: 'hsl(var(--sidebar-foreground))',

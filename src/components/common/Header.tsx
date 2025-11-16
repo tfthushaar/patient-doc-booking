@@ -1,51 +1,116 @@
-import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import routes from "../../routes";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { useAuthContext } from "@/components/auth/AuthProvider";
+import { supabase } from "@/db/supabase";
+import { toast } from "sonner";
+import { Stethoscope, LogOut, User, Settings } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-const Header: React.FC = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const location = useLocation();
-  const navigation = routes.filter((route) => route.visible !== false);
+export default function Header() {
+  const { user, profile, isAdmin } = useAuthContext();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Failed to logout");
+    } else {
+      toast.success("Logged out successfully");
+      navigate("/login");
+    }
+  };
 
   return (
-    <header className="bg-white shadow-md sticky top-0 z-10">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link to="/" className="flex-shrink-0 flex items-center">
-              {/* Please replace with your website logo */}
-              <img
-                className="h-8 w-auto"
-                src={`https://miaoda-site-img.cdn.bcebos.com/placeholder/code_logo_default.png`}
-                alt="Website logo"
-              />
-              {/* Please replace with your website name */}
-              <span className="ml-2 text-xl font-bold text-blue-600">
-                Website Name
-              </span>
-            </Link>
-          </div>
-
-          {/* When there's only one page, you can remove the entire navigation section */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navigation.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`px-3 py-2 text-base font-medium rounded-md ${
-                  location.pathname === item.path
-                    ? "text-blue-600 bg-blue-50"
-                    : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
-                } transition duration-300`}
-              >
-                {item.name}
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center justify-between">
+        <div className="flex items-center gap-6">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="p-2 bg-primary rounded-lg">
+              <Stethoscope className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <span className="font-bold text-lg">MediBook</span>
+          </Link>
+          
+          {user && (
+            <nav className="hidden xl:flex items-center gap-6">
+              <Link to="/" className="text-sm font-medium hover:text-primary transition-colors">
+                Home
               </Link>
-            ))}
-          </div>
+              <Link to="/doctors" className="text-sm font-medium hover:text-primary transition-colors">
+                Doctors
+              </Link>
+              <Link to="/my-appointments" className="text-sm font-medium hover:text-primary transition-colors">
+                My Appointments
+              </Link>
+              {isAdmin && (
+                <>
+                  <Link to="/admin" className="text-sm font-medium hover:text-primary transition-colors">
+                    Admin Dashboard
+                  </Link>
+                  <Link to="/admin/doctors" className="text-sm font-medium hover:text-primary transition-colors">
+                    Manage Doctors
+                  </Link>
+                  <Link to="/admin/users" className="text-sm font-medium hover:text-primary transition-colors">
+                    Manage Users
+                  </Link>
+                </>
+              )}
+            </nav>
+          )}
         </div>
-      </nav>
+
+        <div className="flex items-center gap-4">
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar>
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {profile?.username?.charAt(0).toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium">{profile?.username}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {isAdmin ? "Administrator" : "Patient"}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/profile")}>
+                  <User className="mr-2 h-4 w-4" />
+                  Profile
+                </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem onClick={() => navigate("/admin")}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Admin Panel
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button onClick={() => navigate("/login")}>Login</Button>
+          )}
+        </div>
+      </div>
     </header>
   );
-};
-
-export default Header;
+}
