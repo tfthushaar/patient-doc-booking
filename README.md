@@ -1,7 +1,7 @@
 
 # Patient Doctor Booking System
 
-This is a modern medical appointment booking system built and maintained by Thush. It enables patients to book appointments with doctors, and provides administrators with tools to manage users, doctors, and appointments efficiently.
+This is a modern medical appointment booking system. It enables patients to book appointments with doctors, and provides administrators with tools to manage users, doctors, and appointments efficiently. I mean it was supposed to but it has a lot of issues so i wouldn't suggest you to use this repo for anything else but using it as a foundation to build upon.
 
 ## Features
 
@@ -97,11 +97,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 VITE_LOGIN_TYPE=gmail
 VITE_APP_ID=patient-doc-booking
 ```
-
-## License
-
-This project is proprietary and developed by Thush for medical appointment management.
-
+#Fix issues and push 
 ---
 
 For more details, see `SYSTEM_OVERVIEW.md` and `USER_GUIDE.md`.
